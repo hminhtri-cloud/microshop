@@ -224,7 +224,7 @@ test('seller posts product; customer cannot open product management', async ({ p
   await page.getByLabel('Giá (VND)').fill('125000.00');
   await page.getByLabel('Tồn kho').fill('12');
   await page.getByRole('button', { name: 'Đăng sản phẩm' }).click();
-  await expect(page.getByRole('status')).toContainText('Đã đăng sản phẩm mới');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã đăng sản phẩm mới' })).toBeVisible();
   expect(posted).toBe(true);
 });
 

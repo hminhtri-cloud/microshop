@@ -1,0 +1,86 @@
+name: MicroShop CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: microshop-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Ephemeral test credentials only; never point CI at the local/cloud DB.
+      MYSQL_ROOT_PASSWORD: ci-only-root-password
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: microshop
+      MYSQL_PASSWORD: ci-only-app-password
+      JWT_SECRET: ci-only-long-jwt-signing-key-keep-private-in-real-environments
+      JWT_EXPIRE_MINUTES: "30"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start local services
+        run: docker compose up -d --build --wait
+
+      - name: Test Auth Service with isolated SQLite
+        run: |
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
+            -v "$PWD/services/auth-service/tests:/tests:ro" \
+            auth-service python -m unittest discover -s /tests -v
+
+      - name: Test Product Service with isolated SQLite
+        run: |
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
+            -v "$PWD/services/product-service/tests:/tests:ro" \
+            product-service python -m unittest discover -s /tests -v
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck and build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Test browser flows and local API proxy
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - name: Upload browser failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Show service state on failure
+        if: failure()
+        run: docker compose ps

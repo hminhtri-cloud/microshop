@@ -1,5 +1,27 @@
 # MicroShop — Marketplace
 
+**Làm việc nhóm:** xem [Git workflow](docs/GIT_WORKFLOW.md) để tạo branch,
+Pull Request, review và kiểm tra CI trước khi merge.
+
+**API contract:** xem [thiết kế Auth, Product và Order](docs/API_CONTRACT.md) —
+có phân biệt các endpoint đang chạy với Order Service mới có khung code.
+Nhóm có thể dùng [API draft và danh sách issue backend](docs/API_DRAFT.md) để
+chia việc trước khi triển khai Order.
+Sơ đồ URL, quyền truy cập và luồng màn hình frontend nằm trong
+[Frontend routes](docs/FRONTEND_ROUTES.md).
+Quy ước frontend gọi gateway và mapping service nằm trong
+[Gateway routing](docs/GATEWAY_ROUTING.md).
+Cấu trúc API client theo domain nằm trong
+[API client structure](docs/API_CLIENT_STRUCTURE.md).
+Format response và error message nằm trong
+[API response/errors](docs/API_RESPONSE_ERRORS.md).
+Kiến trúc triển khai Docker Compose, Kubernetes và AWS nằm trong
+[Deployment architecture](docs/DEPLOYMENT_ARCHITECTURE.md).
+Cấu trúc thư mục hạ tầng và deployment nằm trong
+[infrastructure/](infrastructure/README.md) và [deploy/](deploy/README.md).
+Diagram kiến trúc tổng thể nằm trong
+[Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.md).
+
 React + Vite + TypeScript, FastAPI và MySQL. Auth Service có đăng ký/login,
 JWT, hồ sơ seller và admin duyệt seller. Product Service có catalog, tìm kiếm,
 quản lý sản phẩm theo seller và admin kiểm duyệt. Frontend có khu mua sắm,

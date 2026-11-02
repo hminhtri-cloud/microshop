@@ -12,7 +12,7 @@ frontend/src/
     ├── types.ts        # types Auth/Product/Order dùng chung
     ├── auth.ts         # authApi: login, register, me, seller application
     ├── products.ts     # productsApi: catalog, seller/admin product
-    └── orders.ts       # ordersApi: buyer, seller/admin order, payment
+    └── order.ts        # ordersApi: buyer, seller/admin order, payment
 ```
 
 ## Nguyên tắc sử dụng

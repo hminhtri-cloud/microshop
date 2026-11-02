@@ -1,12 +1,12 @@
 // Compatibility facade. New code should import a domain client from ./api/*.
 export { ApiError, errorMessage, request, session } from './api/client';
 export { authApi } from './api/auth';
-export { ordersApi } from './api/orders';
+export { ordersApi } from './api/order';
 export { productsApi } from './api/products';
 export type * from './api/types';
 
 import { authApi } from './api/auth';
-import { ordersApi } from './api/orders';
+import { ordersApi } from './api/order';
 import { productsApi } from './api/products';
 
 // Keep existing component imports working while the client is migrated by domain.

@@ -1,3 +1,5 @@
+# This workflow runs the MicroShop CI pipeline, which includes unit tests, integration tests, and end-to-end tests for the microservices and frontend.
+# Created by Tri
 name: MicroShop CI
 
 on:

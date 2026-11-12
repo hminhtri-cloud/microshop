@@ -39,10 +39,10 @@ git status
 git fetch origin
 git switch develop
 git pull --ff-only origin develop
-git switch -c feature/cart-checkout
+git switch -c feature/TASK-CUA-BAN
 ```
 
-Thay `feature/cart-checkout` theo task thật. Ví dụ:
+Thay `feature/TASK-CUA-BAN` theo task thật. Ví dụ:
 
 ```text
 feature/order-create
@@ -71,14 +71,14 @@ Chỉ stage đúng file thuộc task. Trước khi `git add`, kiểm tra `git st
 
 Dùng dạng `type(scope): mô tả ngắn`:
 
-| Type | Khi nào dùng | Ví dụ |
-|---|---|---|
-| `feat` | Tính năng mới | `feat(cart): persist cart per account` |
-| `fix` | Sửa lỗi | `fix(auth): reject expired token` |
-| `test` | Thêm/sửa test | `test(product): cover seller ownership` |
-| `docs` | Tài liệu | `docs: document local setup` |
-| `chore` | Việc hỗ trợ | `chore: update dependencies` |
-| `ci` | Pipeline | `ci: verify pull requests` |
+| Type    | Khi nào dùng  | Ví dụ                                   |
+| ------- | ------------- | --------------------------------------- |
+| `feat`  | Tính năng mới | `feat(cart): persist cart per account`  |
+| `fix`   | Sửa lỗi       | `fix(auth): reject expired token`       |
+| `test`  | Thêm/sửa test | `test(product): cover seller ownership` |
+| `docs`  | Tài liệu      | `docs: document local setup`            |
+| `chore` | Việc hỗ trợ   | `chore: update dependencies`            |
+| `ci`    | Pipeline      | `ci: verify pull requests`              |
 
 Repo hiện có commit message cũ theo kiểu tự do; quy ước mới áp dụng từ các commit sắp tới, không sửa lịch sử đã chia sẻ.
 
@@ -96,12 +96,12 @@ Mẫu trong `.github/PULL_REQUEST_TEMPLATE.md` sẽ được GitHub điền vào
 
 ### Trước khi mở PR
 
-| Phạm vi | Lệnh kiểm tra |
-|---|---|
-| Toàn bộ stack | `docker compose config --quiet` và `docker compose up -d --build --wait` |
-| Auth | Xem lệnh test SQLite ở `README.md` |
-| Product | Xem lệnh test SQLite ở `README.md` |
-| Frontend | Trong `frontend/`: `npm ci`, `npm run build`, `npm run test:e2e` (cần backend local chạy) |
+| Phạm vi       | Lệnh kiểm tra                                                                             |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| Toàn bộ stack | `docker compose config --quiet` và `docker compose up -d --build --wait`                  |
+| Auth          | Xem lệnh test SQLite ở `README.md`                                                        |
+| Product       | Xem lệnh test SQLite ở `README.md`                                                        |
+| Frontend      | Trong `frontend/`: `npm ci`, `npm run build`, `npm run test:e2e` (cần backend local chạy) |
 
 CI GitHub chạy backend test + build frontend + Playwright cho PR/push tới `develop` và `main`. Đây là quality gate để phát hiện lỗi tích hợp; người viết code vẫn phải tự test trước khi push.
 

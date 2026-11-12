@@ -2,7 +2,7 @@
 
 Các diagram dưới đây mô tả kiến trúc tổng thể theo hai trạng thái:
 
-- **Hiện tại:** frontend Vite gọi Auth/Product qua Vite proxy; Order chưa chạy.
+- **Hiện tại:** Vite proxy route Auth/Product/Order; ba backend có trong Compose. Checkout frontend chưa nối Order. Luồng recovery thực tế xem [Order backend](ORDER_BACKEND.md).
 - **Mục tiêu:** public gateway/ALB route `/api` tới Auth/Product/Order; service nội bộ phối hợp với database riêng logic.
 
 Các đường nét đứt hoặc node có nhãn `DỰ KIẾN` chưa phải resource đang chạy. Chi tiết triển khai: [Deployment Architecture](DEPLOYMENT_ARCHITECTURE.md). Chi tiết URL gateway: [Gateway Routing](GATEWAY_ROUTING.md).
@@ -27,17 +27,17 @@ flowchart LR
     Browser --> Gateway
     Gateway --> Auth
     Gateway --> Product
-    Gateway -. "DỰ KIẾN" .-> Order
+    Gateway --> Order
     Auth --> AuthDB
     Product --> ProductDB
-    Order -. "DỰ KIẾN" .-> OrderDB
-    Order -. "seller eligibility / identity" .-> Auth
-    Order -. "price / stock reservation" .-> Product
+    Order --> OrderDB
+    Order -->|identity| Auth
+    Order -->|price / stock reservation| Product
+    Product -->|seller eligibility| Auth
 
     classDef current fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
     classDef planned fill:#fff8e1,stroke:#f57f17,color:#6d4c00,stroke-dasharray: 5 5;
-    class Browser,Gateway,Auth,Product,AuthDB,ProductDB current;
-    class Order,OrderDB planned;
+    class Browser,Gateway,Auth,Product,Order,AuthDB,ProductDB,OrderDB current;
 ```
 
 **Ownership:** Auth owns users/roles/seller application; Product owns products and stock; Order owns orders, seller orders and item snapshots. No service reads another service's database directly.
@@ -69,11 +69,17 @@ flowchart TB
     Auth -. "health /ready" .-> Vite
     Product -. "health /ready" .-> Vite
 
-    Missing["Order Service\nCHƯA CÓ TRONG COMPOSE"]
-    Vite -. "DỰ KIẾN /api/orders*" .-> Missing
+    Order["order-service :8000\nhost :8004"]
+    Vite -->|"/api/orders* /api/seller/orders* /api/admin/orders*"| Order
+    Order --> MySQL
+    Order --> Auth
+    Order --> Product
 ```
 
-Hiện frontend chạy ngoài Compose; chỉ Auth/Product/MySQL đang có container. `product-db-setup` chỉ khởi tạo database, không phải service xử lý request.
+Hiện frontend chạy ngoài Compose; Auth/Product/Order/MySQL có trong Compose.
+`product-db-setup` và `order-db-setup` chỉ khởi tạo database, không xử lý request.
+Order dùng host port 8004 và có worker phục hồi các durable intent; xem
+[Order backend](ORDER_BACKEND.md) cho flow hiện hành.
 
 ## 3. Public request flow mục tiêu
 
@@ -90,10 +96,12 @@ sequenceDiagram
 
     B->>G: POST /api/orders + JWT + Idempotency-Key
     G->>O: POST /orders
-    O->>A: Verify buyer / seller eligibility (internal auth)
+    O->>A: Verify buyer via /auth/me
     A->>DBa: Read current user/role/status
     A-->>O: Authorized identity
+    O->>DBo: Save durable creating intent / unique buyer-key
     O->>P: Reserve batch stock (internal, idempotent)
+    P->>A: Verify current seller eligibility (internal auth)
     P->>DBp: Lock products and reserve atomically
     P-->>O: Product/seller/price snapshots
     O->>DBo: Save order + seller_orders + items
@@ -103,7 +111,9 @@ sequenceDiagram
     Note over B,DBo: Browser never calls internal Auth/Product reservation endpoints.
 ```
 
-Nếu bước ghi Order DB thất bại sau khi reserve, Order release/reconcile **cùng reservation key**. Không tạo reservation mới khi timeout chưa rõ kết quả.
+Nếu bước ghi Order DB thất bại sau khi reserve, worker tiếp tục durable intent
+bằng **cùng reservation key**. Payment success confirm; cancel/failure/expiry
+release. Không tạo reservation mới hoặc hoàn kho mù khi timeout chưa rõ kết quả.
 
 ## 4. Kubernetes/AWS target
 

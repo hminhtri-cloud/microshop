@@ -26,6 +26,7 @@ jobs:
       MYSQL_PASSWORD: ci-only-app-password
       JWT_SECRET: ci-only-long-jwt-signing-key-keep-private-in-real-environments
       JWT_EXPIRE_MINUTES: "30"
+      INTERNAL_SERVICE_TOKEN: ci-only-internal-service-token
 
     steps:
       - name: Checkout
@@ -48,6 +49,40 @@ jobs:
           docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
             -v "$PWD/services/product-service/tests:/tests:ro" \
             product-service python -m unittest discover -s /tests -v
+
+      - name: Test Order Service with isolated SQLite
+        run: |
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
+            -v "$PWD/services/order-service/tests:/tests:ro" \
+            order-service python -m unittest discover -s /tests -v
+
+      - name: Test real service-to-service checkout with temporary databases
+        run: |
+          docker compose run --rm --no-deps -v "$PWD:/workspace:ro" -w /workspace \
+            auth-service python -m unittest discover -s tests -v
+
+      - name: Create disposable MySQL concurrency databases
+        run: |
+          docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root' <<'SQL'
+          CREATE DATABASE inventory_test;
+          CREATE DATABASE order_test;
+          GRANT ALL ON inventory_test.* TO 'microshop'@'%';
+          GRANT ALL ON order_test.* TO 'microshop'@'%';
+          SQL
+
+      - name: Test inventory concurrency on MySQL
+        run: |
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
+            -e INVENTORY_TEST_DATABASE_URL=mysql+pymysql://microshop:ci-only-app-password@mysql/inventory_test \
+            -v "$PWD/services/product-service/tests:/tests:ro" \
+            product-service python -m unittest discover -s /tests -p test_inventory.py -v
+
+      - name: Test checkout idempotency and payment races on MySQL
+        run: |
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite:// \
+            -e ORDER_TEST_DATABASE_URL=mysql+pymysql://microshop:ci-only-app-password@mysql/order_test \
+            -v "$PWD/services/order-service/tests:/tests:ro" \
+            order-service python -m unittest discover -s /tests -v
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

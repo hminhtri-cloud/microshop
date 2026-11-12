@@ -8,6 +8,7 @@ from app.database import engine, Base
 from app.routes.auth import router as auth_router
 from app.routes.sellers import router as seller_router
 from app.security import jwt_settings
+from app.internal import router as internal_router
 
 # Import models để SQLAlchemy biết các table
 from app import models
@@ -32,6 +33,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(seller_router)
+app.include_router(internal_router)
 
 @app.get("/")
 def read_root():

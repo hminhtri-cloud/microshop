@@ -29,7 +29,7 @@ const order = await ordersApi.create(payload, idempotencyKey);
 Không làm:
 
 ```ts
-fetch('http://127.0.0.1:8003/orders');
+fetch('http://127.0.0.1:8004/orders');
 ```
 
 hoặc gọi `fetch()` trực tiếp trong component. `client.ts` là nơi duy nhất chịu trách nhiệm cho `/api`, bearer token, timeout, parse lỗi và xử lý 401.

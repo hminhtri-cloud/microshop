@@ -1,7 +1,8 @@
 import json
 import os
+from http.client import HTTPException as HTTPClientError
 from dataclasses import dataclass
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from fastapi import Depends, HTTPException
@@ -57,7 +58,7 @@ def get_identity(
             detail="Authentication service unavailable",
         ) from None
 
-    except (URLError, TimeoutError, ValueError):
+    except (OSError, HTTPClientError, ValueError):
         raise HTTPException(
             status_code=503,
             detail="Authentication service unavailable",
@@ -90,3 +91,11 @@ def require_buyer(
         )
 
     return identity
+
+
+def require_role(role: str):
+    def check(identity: Identity = Depends(get_identity)) -> Identity:
+        if identity.role != role:
+            raise HTTPException(403, "Insufficient permissions")
+        return identity
+    return check

@@ -27,7 +27,9 @@ Docker Compose network: microshop-network
    ├── mysql :3306 (host bind 127.0.0.1:3307)
    ├── auth-service :8000 (host 127.0.0.1:8001)
    ├── product-db-setup (one-shot init product_db)
-   └── product-service :8000 (host 127.0.0.1:8002)
+    ├── product-service :8000 (host 127.0.0.1:8002)
+    ├── order-db-setup (one-shot init order_db)
+    └── order-service :8000 (host 127.0.0.1:8004)
 ```
 
 ### Trạng thái Compose
@@ -38,7 +40,7 @@ Docker Compose network: microshop-network
 - `product-service` gọi Auth qua `http://auth-service:8000`, không gọi host port.
 - Healthcheck và `depends_on` dùng để kiểm tra thứ tự khởi động, không thay thế migration/backup/monitoring.
 - Frontend chưa có container trong Compose; chạy bằng `npm run dev` ở host trên port `5173`.
-- Order Service chưa có trong Compose vì chưa có `main.py`, Dockerfile, router, migration/runtime và `order_db` local.
+- Order Service có app/router/Dockerfile, `order-db-setup`, healthcheck và worker phục hồi. Xem [Order backend](ORDER_BACKEND.md). Frontend checkout chưa nối API; Vite đã route các URL Order.
 
 Lệnh local chuẩn:
 
@@ -52,7 +54,7 @@ npm run dev
 
 Các port bind chỉ trên `127.0.0.1`; không mở Auth/Product trực tiếp ra mạng LAN. Không commit `.env`, JWT secret, database password hoặc volume data.
 
-## 3. Compose target sau khi có Order
+## 3. Compose sau khi thêm Order
 
 ```text
 microshop-mysql :3306
@@ -73,7 +75,7 @@ ORDER_AUTH_URL=http://auth-service:8000
 ORDER_PRODUCT_URL=http://product-service:8000
 ```
 
-Stock reservation và seller eligibility là service-to-service; không publish `/internal/*` ra host/gateway. Mỗi service phải có health/readiness riêng. Khi thêm Order, cần issue #4 trước rồi mới bật proxy `ORDER_API_TARGET` và checkout frontend.
+Stock reservation và seller eligibility là service-to-service, có `X-Service-Token`; Vite chặn `/api/internal`. Host ports chỉ bind loopback cho debug. Mỗi service có health/readiness riêng. Proxy `ORDER_API_TARGET` đã có; checkout frontend là bước tiếp theo.
 
 ## 4. Kubernetes target
 

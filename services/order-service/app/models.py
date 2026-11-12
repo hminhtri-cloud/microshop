@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, JSON, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -14,6 +14,11 @@ class Order(Base):
 
     # ID do Auth Service quản lý
     customer_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    request_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_body: Mapped[dict] = mapped_column(JSON, nullable=False)
+    # Durable intent exists before making any inventory request.
+    error_code: Mapped[str | None] = mapped_column(String(64))
 
     receiver_name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str] = mapped_column(String(15), nullable=False)
@@ -21,7 +26,7 @@ class Order(Base):
     note: Mapped[str | None] = mapped_column(String(500))
 
     total_amount: Mapped[Decimal] = mapped_column(
-        Numeric(14, 2), nullable=False
+        Numeric(14, 2), nullable=False, default=Decimal("0.00")
     )
 
     # Chưa thanh toán thật; sau này dùng cho thanh toán mô phỏng
@@ -30,7 +35,7 @@ class Order(Base):
     )
 
     status: Mapped[str] = mapped_column(
-        String(20), default="pending", nullable=False
+        String(20), default="creating", nullable=False, index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -38,6 +43,7 @@ class Order(Base):
     )
 
     __table_args__ = (
+        UniqueConstraint("customer_id", "request_key", name="uq_order_customer_request"),
         CheckConstraint("total_amount >= 0", name="ck_orders_total_nonnegative"),
     )
 

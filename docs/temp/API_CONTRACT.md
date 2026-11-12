@@ -1,6 +1,6 @@
 # MicroShop — API contract cho Auth, Product và Order
 
-> Bản thiết kế cho nhóm frontend/backend/DevOps thống nhất trước khi mở API Order. **[HIỆN CÓ]** được đối chiếu với code trong Auth/Product; **[DỰ KIẾN]** là API/behavior chưa chạy. Order đã có **khung code** `models.py`, `schemas.py`, `service.py`, `auth.py`, `products_client.py`, `database.py`, nhưng chưa có router, app, container và `order_db` local. Ví dụ JSON chỉ minh họa; không phải dữ liệu demo đã tạo trong MySQL.
+> Auth/Product và Order backend đã có runtime local. Chi tiết Order được triển khai, cấu hình, trạng thái phục hồi và test: [Order backend](ORDER_BACKEND.md). Phần 4 bên dưới giữ bản thiết kế ban đầu để tham chiếu; nhãn **[DỰ KIẾN]** và các đoạn “chưa implement” của bản draft đã được thay thế bởi tài liệu runtime đó. Ví dụ JSON chỉ minh họa; không phải dữ liệu demo đã tạo trong MySQL.
 
 ## 1. Quy ước chung
 
@@ -9,8 +9,8 @@
 | Cách gọi | Auth | Product | Order |
 |---|---|---|---|
 | Frontend local qua Vite | `/api/auth/*`, `/api/seller/application`, `/api/admin/seller-applications` | `/api/products*`, `/api/seller/products*`, `/api/admin/products*` | `/api/orders*`, `/api/seller/orders*`, `/api/admin/orders*` **[DỰ KIẾN]** |
-| Service trực tiếp trên Mac | `http://127.0.0.1:8001` | `http://127.0.0.1:8002` | Chưa có port/container |
-| Gọi giữa container | `http://auth-service:8000` | `http://product-service:8000` | Chưa có service |
+| Service trực tiếp trên Mac | `http://127.0.0.1:8001` | `http://127.0.0.1:8002` | `http://127.0.0.1:8004` |
+| Gọi giữa container | `http://auth-service:8000` | `http://product-service:8000` | `http://order-service:8000` |
 
 Vite bỏ tiền tố `/api` trước khi chuyển tới backend. Ví dụ browser gọi `GET /api/products/15` thì Product Service nhận `GET /products/15`. Nginx/API gateway cho production chưa được triển khai; không tự giả định URL/port production.
 
@@ -246,7 +246,13 @@ Giới hạn hiện tại: sản phẩm active của seller vừa bị **tạm n
 
 `GET /health` và `GET /ready` hoạt động tương tự Auth; `/ready` kiểm tra kết nối `product_db`.
 
-## 4. Order Service — [DỰ KIẾN API; ĐÃ CÓ KHUNG CODE, CHƯA CHẠY]
+## 4. Order Service — bản thiết kế ban đầu
+
+**Runtime hiện có:** [ORDER_BACKEND.md](ORDER_BACKEND.md), OpenAPI cổng 8004.
+Khác biệt quan trọng so với draft: lưu durable intent trước khi reserve; worker
+tiếp tục request cũ khi lỗi, đơn unpaid hết hạn sau 30 phút và được worker hoàn
+kho. Không có TTL tự xóa reservation độc lập tại Product. Có trạng thái trung gian
+`creating/confirming/cancelling/failing`, và attempt bị từ chối là `rejected`.
 
 Khung Order hiện có `receiver_name`, phone 9–15 ký tự, tối đa 50 dòng hàng, `payment_status=unpaid`, `orders.status=pending`, và `Numeric(14,2)` cho tổng tiền. Draft bên dưới dùng những tên/giới hạn đó; các phần idempotency, reservation, mock payment, API đọc/ghi, readiness và timestamp `updated_at` vẫn phải thiết kế/triển khai thêm. Không xem hàm `build_order_quote()` (hiện chỉ đọc `/products/{id}` và so tồn kho) là giữ kho nguyên tử hoặc một endpoint đã chạy.
 

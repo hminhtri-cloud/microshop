@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database import Base, engine
 from app import models  # Register tables before local bootstrap.
 from app.routes import router
+from app.reservations import router as reservation_router
 
 
 @asynccontextmanager
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="MicroShop Product Service", version="0.1.0", lifespan=lifespan)
 app.include_router(router)
+app.include_router(reservation_router)
 
 
 @app.get("/health")

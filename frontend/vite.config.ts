@@ -2,6 +2,25 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const proxy = {
+  '/api/internal': {
+    target: 'http://127.0.0.1:8001',
+    bypass: (): false => false,
+  },
+  '/api/admin/orders': {
+    target: process.env.ORDER_API_TARGET || 'http://127.0.0.1:8004',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/api/, ''),
+  },
+  '/api/seller/orders': {
+    target: process.env.ORDER_API_TARGET || 'http://127.0.0.1:8004',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/api/, ''),
+  },
+  '/api/orders': {
+    target: process.env.ORDER_API_TARGET || 'http://127.0.0.1:8004',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/api/, ''),
+  },
   '/api/admin/products': {
     target: process.env.PRODUCT_API_TARGET || 'http://127.0.0.1:8002',
     changeOrigin: true,

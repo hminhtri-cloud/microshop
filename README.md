@@ -3,8 +3,9 @@
 **Làm việc nhóm:** xem [Git workflow](docs/GIT_WORKFLOW.md) để tạo branch,
 Pull Request, review và kiểm tra CI trước khi merge.
 
-**API contract:** xem [thiết kế Auth, Product và Order](docs/API_CONTRACT.md) —
-có phân biệt các endpoint đang chạy với Order Service mới có khung code.
+**API contract:** xem [thiết kế Auth, Product và Order](docs/API_CONTRACT.md).
+**Order backend đã có runtime:** xem [Order backend](docs/ORDER_BACKEND.md) để
+cấu hình internal token, tạo đơn, thanh toán mô phỏng và tìm hiểu cơ chế phục hồi.
 Nhóm có thể dùng [API draft và danh sách issue backend](docs/API_DRAFT.md) để
 chia việc trước khi triển khai Order.
 Sơ đồ URL, quyền truy cập và luồng màn hình frontend nằm trong
@@ -25,8 +26,8 @@ Diagram kiến trúc tổng thể nằm trong
 React + Vite + TypeScript, FastAPI và MySQL. Auth Service có đăng ký/login,
 JWT, hồ sơ seller và admin duyệt seller. Product Service có catalog, tìm kiếm,
 quản lý sản phẩm theo seller và admin kiểm duyệt. Frontend có khu mua sắm,
-giỏ hàng tạm thời và menu riêng cho người mua, seller, admin. Order Service
-và thanh toán mô phỏng sẽ được làm ở các milestone tiếp theo.
+giỏ hàng tạm thời và menu riêng cho người mua, seller, admin. Order backend có
+tạo/xem/hủy đơn, đơn bán và thanh toán mô phỏng; frontend checkout chưa được nối.
 
 ## Giao diện web local
 
@@ -47,7 +48,7 @@ hay đưa mật khẩu database vào browser. Các trang hiện có: `/`, `/regi
 Tạo admin bằng lệnh ở mục "Tạo admin lần đầu" bên dưới, không có tài khoản
 admin mặc định. Sau khi admin duyệt seller, quay lại trang người bán và bấm
 "Tải lại trạng thái" để xem kết quả. Hồ sơ và sản phẩm đọc/ghi MySQL local;
-giỏ hàng chỉ lưu trên browser; đặt hàng chưa có.
+giỏ hàng chỉ lưu trên browser; API đặt hàng có trên cổng 8004, UI chưa nối API.
 
 ```bash
 cd frontend
@@ -76,8 +77,8 @@ trước khi triển khai public cần thiết kế HTTPS và chính sách lưu 
 Trang chủ `/` là **storefront dành cho người mua**: giới thiệu sản phẩm mới và
 liên kết vào catalog/giỏ hàng. Kênh bán hàng chỉ là một liên kết phụ từ trang
 mua sắm. Seller và admin có menu công việc riêng; seller vẫn được mua hàng.
-Các trang đơn mua, đơn bán và quản trị đơn chưa có vì chưa có Order Service.
-Menu công việc chỉ ghi “Sắp có”, không giả lập rằng đã đặt hàng được.
+Các trang đơn mua, đơn bán và quản trị đơn chưa được nối với Order backend.
+Menu công việc chỉ ghi “Sắp có”; các trang đơn hàng chưa nối Order backend.
 
 ### Giỏ hàng frontend: cách thử
 
@@ -97,8 +98,9 @@ Sản phẩm đã ẩn/khóa/biến mất hoặc vượt tồn kho được đá
 lượng. Tổng tiền chỉ là hiển thị dự kiến (tính bằng số nguyên cents, không tính
 tiền qua float); backend phải tính lại giá/tồn kho lúc tạo order.
 
-Nút **Đặt hàng — sắp ra mắt** cố ý bị vô hiệu hóa: chưa có Order Service nên
-không có đơn nào được ghi vào database, chưa trừ kho và chưa có thanh toán giả.
+Nút **Đặt hàng — sắp ra mắt** vẫn bị vô hiệu hóa cho đến khi nối frontend checkout.
+Order backend có thể được thử riêng qua Swagger cổng 8004 và có giữ/hoàn kho thật
+trong database local cùng thanh toán mô phỏng.
 Giỏ local ở guest và mỗi user trên cùng browser chỉ là trạng thái giao diện,
 không đồng bộ giữa thiết bị. Trên máy dùng chung, guest kế tiếp có thể thấy
 giỏ guest cũ vì browser vẫn giữ `localStorage`.
@@ -109,6 +111,8 @@ Yêu cầu: Docker Desktop đang chạy và Docker Compose v2.
 
 1. Mở terminal tại thư mục `microshop`.
 2. Nếu chưa có `.env`, sao chép `.env.example` thành `.env` và điền mật khẩu local.
+   Thêm `INTERNAL_SERVICE_TOKEN` bằng một secret riêng (`openssl rand -hex 32`)
+   cho Auth/Product/Order; Compose yêu cầu biến này cả với `.env` đã có.
    Sinh `JWT_SECRET` bằng `openssl rand -hex 32` và điền vào `.env` (không commit).
 3. Chạy:
 
@@ -185,8 +189,8 @@ thay đổi schema. Chưa có retry tự động ở app ngoài cơ chế restar
 
 ## Tiếp theo
 
-Order Service để xác nhận giỏ hàng nhiều seller, tạo đơn và thanh toán mô phỏng.
-Mỗi milestone có test và hướng dẫn kiểm tra riêng.
+Nối frontend checkout và trang quản lý đơn vào Order backend. Hướng dẫn backend
+và test nằm ở [Order backend](docs/ORDER_BACKEND.md).
 
 ## Thử login và JWT trong Swagger
 
@@ -378,7 +382,7 @@ token sai trả 401 từ Auth Service, không chấp nhận `seller_id` do clien
 ### Giới hạn schema
 
 `create_all` chỉ bootstrap bảng `products` trong DB mới, **không phải hệ thống
-migration**. Thay đổi cấu trúc bảng đã có cần Alembic. Catalog hiện không có
-order/cart, nên trường tồn kho chưa tự động giảm. Trang admin tải tối đa 100
+migration**. Thay đổi cấu trúc bảng đã có cần Alembic. Giỏ hàng vẫn ở browser;
+tồn kho giảm qua reservation nội bộ khi gọi Order API. Trang admin tải tối đa 100
 sản phẩm, cần phân trang thực tế nếu dữ liệu nhiều hơn.
 # microshop

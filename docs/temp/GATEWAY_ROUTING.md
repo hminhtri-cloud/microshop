@@ -24,7 +24,7 @@ Vite dev/preview proxy
     ├── /api/products*, /api/seller/products*, /api/admin/products*
     │       └── Product Service :8002, bỏ prefix /api
     └── /api/orders*, /api/seller/orders*, /api/admin/orders*
-            └── Order Service, bỏ prefix /api khi service được bật
+            └── Order Service :8004, bỏ prefix /api
 ```
 
 Browser gọi `GET /api/products/15`; service nhận `GET /products/15`. Browser không gọi `http://127.0.0.1:8001` hoặc `:8002` trực tiếp.
@@ -57,9 +57,10 @@ Production gateway chưa được triển khai trong repo. Sơ đồ trên là t
 | `/api/products*` | `/products*` | Product | Đang dùng |
 | `/api/seller/products*` | `/seller/products*` | Product | Đang dùng |
 | `/api/admin/products*` | `/admin/products*` | Product | Đang dùng |
-| `/api/orders*` | `/orders*` | Order | Dự kiến |
-| `/api/seller/orders*` | `/seller/orders*` | Order | Dự kiến |
-| `/api/admin/orders*` | `/admin/orders*` | Order | Dự kiến |
+| `/api/orders*` | `/orders*` | Order | Có proxy và backend; UI chưa nối |
+| `/api/seller/orders*` | `/seller/orders*` | Order | Có proxy và backend; UI chưa nối |
+| `/api/admin/orders*` | `/admin/orders*` | Order | Có proxy và backend; UI chưa nối |
+| `/api/internal*` | Không chuyển tiếp | — | Vite trả 404 |
 
 Rule cụ thể hơn phải được đánh giá trước rule tổng quát. Ví dụ `/api/seller/products` phải đi Product, không bị rule `/api` chuyển nhầm sang Auth. `frontend/vite.config.ts` hiện đã đặt các rule Product trước rule tổng quát `/api`.
 
@@ -105,7 +106,8 @@ Gateway không được tự gán `customer_id`, `seller_id`, `role`, `total_amo
 Order gọi Auth/Product bằng network nội bộ, không qua browser gateway:
 
 ```text
-Order → Auth: seller eligibility / identity check
+Order → Auth: identity check
+Product → Auth: seller eligibility check
 Order → Product: stock reservation, release, confirmation, product snapshot
 ```
 
@@ -147,7 +149,7 @@ Khi bổ sung Order vào Vite proxy, dùng target riêng và rewrite cùng quy t
 
 ```ts
 '/api/orders': {
-  target: process.env.ORDER_API_TARGET || 'http://127.0.0.1:8003',
+  target: process.env.ORDER_API_TARGET || 'http://127.0.0.1:8004',
   changeOrigin: true,
   rewrite: (path: string) => path.replace(/^\/api/, ''),
 },

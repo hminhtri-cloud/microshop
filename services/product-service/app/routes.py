@@ -64,11 +64,20 @@ def create_product(data: ProductCreate, seller: Identity = Depends(require_role(
 
 @router.put("/seller/products/{product_id}", response_model=ProductResponse)
 def update_product(product_id: int, data: ProductUpdate, seller: Identity = Depends(require_role("seller")), db: Session = Depends(get_db)):
-    product = db.get(Product, product_id)
+    product = db.scalar(select(Product).where(Product.id == product_id).with_for_update())
     if not product or product.seller_id != seller.id:
         raise HTTPException(404, "Product not found")
     if product.status == "blocked":
         raise HTTPException(409, "Product is blocked by an administrator")
+    # Seller supplies AVAILABLE quantity, not physical total. Do not overwrite
+    # concurrent checkout deductions from a stale form while holds are active.
+    from app.reservation_models import InventoryReservation, InventoryReservationItem
+    held = db.scalar(select(InventoryReservationItem.id).join(
+        InventoryReservation, InventoryReservation.id == InventoryReservationItem.reservation_id
+    ).where(InventoryReservationItem.product_id == product_id,
+            InventoryReservation.status == "reserved").limit(1))
+    if held and data.quantity != product.quantity:
+        raise HTTPException(409, "Cannot replace stock while reservations are active")
     for key, value in data.model_dump(mode="json").items():
         setattr(product, key, value)
     db.commit()

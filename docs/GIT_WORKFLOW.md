@@ -62,7 +62,7 @@ git diff
 git add <duong-dan-file-lien-quan>
 git diff --cached
 git commit -m "feat(order): create customer order endpoint"
-git push -u origin feature/cart-checkout
+git push -u origin <your branh>
 ```
 
 Chỉ stage đúng file thuộc task. Trước khi `git add`, kiểm tra `git status` để nhận ra file lạ do người khác hoặc công cụ tạo. Có thể xác nhận file nhạy cảm bị bỏ qua bằng `git check-ignore .env`.

@@ -1,4 +1,32 @@
 # created by Tri
+.DEFAULT_GOAL := help
+
+.PHONY: help compose-check up lint-frontend build-frontend test-e2e
+
+help:
+	@printf '%s\n' \
+		'make compose-check    Kiểm tra cấu hình Compose' \
+		'make up               Build và khởi động hệ thống' \
+		'make lint-frontend    Kiểm tra code frontend' \
+		'make build-frontend   Build frontend' \
+		'make test-backend     Chạy test backend' \
+		'make test-e2e         Chạy test giao diện'
+
+compose-check:
+	docker compose config --quiet
+
+up:
+	docker compose up -d --build --wait
+
+lint-frontend:
+	cd frontend && npm run lint
+
+build-frontend:
+	cd frontend && npm run build
+
+test-e2e:
+	cd frontend && npm run test:e2e
+	
 .PHONY: test-auth test-product test-order test-integration test-backend
 
 test-auth:

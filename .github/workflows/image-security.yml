@@ -1,0 +1,67 @@
+name: MicroShop Image Security
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth-service
+            context: services/auth-service
+          - service: product-service
+            context: services/product-service
+          - service: order-service
+            context: services/order-service
+          - service: frontend
+            context: frontend
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build image
+        env:
+          IMAGE: microshop/${{ matrix.service }}:${{ github.sha }}
+          BUILD_CONTEXT: ${{ matrix.context }}
+        run: docker build --tag "$IMAGE" "$BUILD_CONTEXT"
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.70.0
+          scan-type: image
+          image-ref: microshop/${{ matrix.service }}:${{ github.sha }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          format: table
+          output: trivy-report.txt
+          exit-code: "0"
+          timeout: 10m0s
+
+      - name: Upload vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.service }}
+          path: trivy-report.txt
+          if-no-files-found: warn
+          retention-days: 14

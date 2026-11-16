@@ -1,0 +1,2 @@
+services/product-service/init-product-db.sh text eol=lf
+services/order-service/init-order-db.sh text eol=lf

@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microshop-local
+  namespace: argocd
+spec:
+  project: microshop-local
+  source:
+    repoURL: https://github.com/hminhtri-cloud/microshop.git
+    targetRevision: feature/k8s-local-auth
+    path: deploy/kubernetes/overlays/local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microshop
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - CreateNamespace=false

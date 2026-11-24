@@ -21,3 +21,9 @@ images:
   - name: microshop-frontend
     newName: microshop-frontend
     newTag: "2072f94"
+
+patches:
+  - path: argocd-namespace-protection.yaml
+  - path: argocd-pvc-protection.yaml
+  - path: argocd-bootstrap-job.yaml
+  - path: gitops-marker.yaml

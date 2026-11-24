@@ -1,18 +1,21 @@
 import asyncio
 import logging
 import os
+from time import perf_counter
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from prometheus_client import make_asgi_app
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 
 from app.checkout import reconcile_once
 from app.database import Base, engine
+from app.metrics import HTTP_REQUEST_DURATION_SECONDS, HTTP_REQUESTS
 from app.routes import router
 
 logger = logging.getLogger(__name__)
@@ -51,14 +54,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="MicroShop Order Service", version="1.0.0", lifespan=lifespan)
 app.include_router(router)
+app.mount("/metrics", make_asgi_app())
 
 
 @app.middleware("http")
 async def request_id(request: Request, call_next):
+    # The metrics endpoint is scraped internally. Excluding it prevents every
+    # scrape from becoming application traffic and keeps the series useful.
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
     request.state.request_id = str(uuid4())
-    response = await call_next(request)
-    response.headers["X-Request-ID"] = request.state.request_id
-    return response
+    started_at = perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["X-Request-ID"] = request.state.request_id
+        return response
+    finally:
+        route = request.scope.get("route")
+        route_template = getattr(route, "path", "unmatched")
+        labels = (request.method, route_template, str(status_code))
+        HTTP_REQUESTS.labels(*labels).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(*labels).observe(perf_counter() - started_at)
 
 
 @app.exception_handler(HTTPException)

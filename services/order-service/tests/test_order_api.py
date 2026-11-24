@@ -148,6 +148,16 @@ class OrderApiTests(unittest.TestCase):
         self.assertEqual(status, 201, order)
         return order
 
+    def test_metrics_exposes_template_route_without_identity_labels(self):
+        self.assertEqual(self.request("GET", "/health")[0], 200)
+        with urlopen(self.base_url + "/metrics", timeout=10) as response:
+            metrics = response.read().decode()
+        self.assertEqual(response.status, 200)
+        self.assertIn('microshop_order_http_requests_total{method="GET",route="/health",status_code="200"}', metrics)
+        self.assertNotIn('customer_id="', metrics)
+        self.assertNotIn('order_id="', metrics)
+        self.assertNotIn('route="/orders/1"', metrics)
+
     def reconcile(self):
         with patch("app.checkout.SessionLocal", self.sessions):
             checkout.reconcile_once()

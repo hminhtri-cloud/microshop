@@ -43,3 +43,21 @@
   200; `/api/internal/sellers/eligibility` returned 404.
 - Next: commit this reviewed baseline, then assess whether a local Ingress adds
   value beyond the frontend Nginx gateway without exposing backend services.
+
+## 2026-11-25 — Milestone 2: local access
+
+- Reviewed the repository deployment architecture.  It defines Ingress/ALB as
+  the AWS target while the local overlay already uses a frontend ClusterIP plus
+  port-forward.  The Minikube `ingress` addon is disabled.
+- Chose not to install ingress-nginx: host free RAM was 1.32 GiB while Compose
+  and the local cluster were running, and an extra controller would duplicate
+  frontend Nginx routing without improving the local demo.
+- Documented the supported local entrypoint: `kubectl port-forward` only to
+  `service/frontend`.  Auth, Product, Order and MySQL remain non-public
+  ClusterIP Services.  No Minikube tunnel or NodePort is required.
+- Runtime evidence remains the temporary frontend forward: host requests to
+  `/`, `/api/products`, and `/api/health` returned 200; the frontend Nginx
+  returned 404 for `/api/internal/sellers/eligibility`.
+- Next: bootstrap a resource-bounded Argo CD installation after checking the
+  remaining local capacity.  GitOps will manage application manifests only;
+  the externally created Secret and MySQL PVC remain outside Git ownership.

@@ -98,10 +98,21 @@ kubectl --context minikube -n microshop wait --for=condition=complete job/mysql-
 
 ## Kiểm tra và mở giao diện
 
+### Đường truy cập local
+
+Overlay local chủ động **không** cài Ingress controller hoặc NodePort. Nginx
+trong `frontend` vẫn là gateway duy nhất: nó giữ contract `/api/*` và chặn
+`/api/internal/*`. Chỉ Service `frontend` được chuyển tiếp tạm thời từ laptop;
+Auth, Product, Order và MySQL đều giữ `ClusterIP` nên không có cổng host riêng.
+Điều này tránh thêm một lớp routing trùng với Nginx và phù hợp tài nguyên của
+Minikube local. Ingress/ALB là phương án mục tiêu của môi trường AWS, không
+phải điều kiện cho demo local này.
+
 ```powershell
 kubectl --context minikube -n microshop get pvc,deploy,pods,svc
 kubectl --context minikube -n microshop port-forward service/frontend 18080:80
 ```
 
-Mở `http://127.0.0.1:18080`. Dừng port-forward bằng `Ctrl+C`; dừng cluster sau
-khi review bằng `minikube stop -p minikube`.
+Mở `http://127.0.0.1:18080`. Lệnh chạy ở foreground; dừng nó bằng `Ctrl+C`.
+Không cần `minikube tunnel`. Dừng cluster sau khi review bằng `minikube stop -p
+minikube`.

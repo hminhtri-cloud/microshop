@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+data:
+  DATABASE_HOST: mysql
+  DATABASE_PORT: "3306"
+  MYSQL_DATABASE: auth_db
+  MYSQL_USER: microshop
+  JWT_EXPIRE_MINUTES: "30"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+data:
+  DATABASE_HOST: mysql
+  DATABASE_PORT: "3306"
+  MYSQL_DATABASE: product_db
+  MYSQL_USER: microshop
+  AUTH_SERVICE_URL: http://auth-service:8000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+data:
+  DATABASE_HOST: mysql
+  DATABASE_PORT: "3306"
+  MYSQL_DATABASE: order_db
+  MYSQL_USER: microshop
+  AUTH_SERVICE_URL: http://auth-service:8000
+  PRODUCT_SERVICE_URL: http://product-service:8000

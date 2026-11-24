@@ -1,23 +1,31 @@
-# Kubernetes Deployments
+# Kubernetes deployments
 
-Kubernetes target dùng Kustomize:
+Thư mục này dùng Kustomize để mô tả các workload MicroShop.
 
 ```text
 deploy/kubernetes/
 ├── base/
-│   ├── kustomization.yaml
-│   ├── namespace.yaml             # dự kiến
-│   ├── frontend/                  # Deployment + Service
-│   ├── auth-service/              # Deployment + Service
-│   ├── product-service/           # Deployment + Service
-│   ├── order-service/             # Deployment + Service
-│   └── ingress.yaml               # ALB ingress dự kiến
+│   ├── namespace.yaml
+│   ├── auth-service/
+│   ├── product-service/
+│   ├── order-service/
+│   └── frontend/
 └── overlays/
-    ├── local/
-    ├── staging/
-    └── production/
+    └── local/
+        ├── auth-config.yaml
+        ├── mysql.yaml
+        └── kustomization.yaml
 ```
 
-Mỗi workload cần readiness/liveness probe, resource requests/limits, image tag theo git SHA và Secret reference. Database production chạy RDS, không chạy MySQL trong app pod. `/internal/*` không được đưa vào Ingress public.
+`base` chứa Deployment và Service chung. Mỗi Service là `ClusterIP`, tức chỉ
+nhận traffic bên trong cluster. `frontend` chạy Nginx với cấu hình
+`frontend/nginx.conf`: nó định tuyến `/api/products` đến Product,
+`/api/orders` đến Order, API còn lại đến Auth, và trả `404` cho
+`/api/internal`.
 
-Chưa apply manifest vì Order Service chưa runtime và chưa chốt cluster/account/namespace thật.
+Overlay `local` cung cấp ConfigMap, MySQL/PVC và Job bootstrap database. Đây
+chỉ là môi trường Minikube; production phải dùng database được quản lý thay vì
+MySQL Deployment này.
+
+Xem [hướng dẫn local](overlays/local/README.md) trước khi apply. Secret không
+được đưa vào Git.

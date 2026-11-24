@@ -88,3 +88,33 @@
 - Next: assess metrics already exposed by the services and remaining laptop
   capacity.  Do not add a heavyweight monitoring stack if it would exceed the
   local resource budget.
+
+## 2026-11-25 — Milestones 4–7: bounded observability and operations preparation
+
+- Added Order Service Prometheus instrumentation in the prior observability
+  commit. It records only method, template route, and HTTP status; the
+  repository's isolated Order test suite passed 28 tests (15 optional MySQL
+  tests skipped by its existing design). Nginx configuration blocks `/metrics`
+  and `/api/metrics` from the public gateway.
+- Added Prometheus rules for an unavailable Order scrape target and a sustained
+  Order 5xx ratio, plus dashboard/configuration documentation. There is no
+  Alertmanager or external notification integration in the local overlay.
+- Current runtime capacity is deliberately below the safe monitoring budget:
+  the host had 0.64 GiB RAM free while Minikube used 2.34 GiB of its 4 GiB
+  allocation. Prometheus and Grafana need 384 MiB of requests before runtime
+  overhead. Therefore the observability overlay was rendered but was not
+  applied, no Grafana Secret/namespace was created, and no scrape/dashboard or
+  alert result is claimed.
+- Added `LOCAL_RUNBOOK.md` for safe build/open/update/rollback/diagnosis/stop
+  operations, and `docs/CI_GITOPS_HANDOFF.md` for the CI/registry/GitOps
+  boundary. The CI review found that Trivy uploads reports but `exit-code: 0`
+  does not gate HIGH/CRITICAL findings; it also has no registry push or GitOps
+  manifest update.
+- Live baseline recheck: the existing Minikube node was Ready, `mysql-data`
+  Bound, five application Deployments were 1/1 available, and a temporary
+  frontend-only forward returned 200 for `/` and `/api/products`, 401 for
+  `/api/orders` without credentials, and 404 for `/api/internal/...`.
+- Next: once host RAM headroom permits, load the already built Order/frontend
+  observability images, update only their local image tags through GitOps, then
+  apply the observability overlay and perform the documented controlled alert
+  and recovery checks.

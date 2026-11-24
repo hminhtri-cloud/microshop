@@ -3,4 +3,4 @@ kind: Deployment
 metadata:
   name: frontend
   annotations:
-    microshop.io/gitops-revision: "1"
+    microshop.io/gitops-revision: "2"

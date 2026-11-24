@@ -61,3 +61,30 @@
 - Next: bootstrap a resource-bounded Argo CD installation after checking the
   remaining local capacity.  GitOps will manage application manifests only;
   the externally created Secret and MySQL PVC remain outside Git ownership.
+
+## 2026-11-25 — Milestone 3: Argo CD Core GitOps
+
+- Installed the official, pinned Argo CD Core `v3.6.1` into a separate
+  `argocd` namespace.  Core provides the GitOps controllers and CRDs without
+  an always-on API/UI/notification server.  Its four workloads are bounded to
+  a combined 512 MiB of requested memory and 1 GiB of memory limits.
+- Bootstrap is deliberately separate from the application source.  The Git
+  tracked `AppProject` permits only the public MicroShop repository and the
+  in-cluster `microshop` destination.  The `Application` tracks
+  `feature/k8s-local-auth:deploy/kubernetes/overlays/local`, enables
+  self-healing but not prune, and does not include the external Secret.
+- Verified anonymous read access to the public branch before bootstrap.  The
+  initial automated sync reached `Synced` and `Healthy` at commit `6841b6c`.
+  Argo CD recreated only the idempotent bootstrap Job; `mysql-data` remained
+  Bound and all application Deployments remained available.
+- GitOps change proof: commit `8b3641f` changed the harmless frontend metadata
+  marker from `1` to `2`.  After a requested Application refresh, Argo fetched
+  that exact revision and applied only the Frontend Deployment metadata.  The
+  frontend Pod UID stayed `ea09c7a3-48aa-4419-bd9d-71f4a53ff8b0`.
+- GitOps rollback proof: `git revert` produced `a8a5880`; Argo synced that
+  exact revision, restored the marker to `1`, and retained the same Pod UID.
+  No reset, prune, PVC deletion, Secret update, or direct workload apply was
+  used for either proof.
+- Next: assess metrics already exposed by the services and remaining laptop
+  capacity.  Do not add a heavyweight monitoring stack if it would exceed the
+  local resource budget.

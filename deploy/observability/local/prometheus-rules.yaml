@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+data:
+  order-service.yaml: |
+    groups:
+      - name: microshop-order-service
+        rules:
+          - alert: MicroShopOrderServiceUnavailable
+            expr: up{job="order-service"} == 0
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: Order Service is not reachable by Prometheus
+              description: The in-cluster Order Service scrape target has been down for at least one minute.
+          - alert: MicroShopOrderHigh5xxRate
+            expr: sum(rate(microshop_order_http_requests_total{status_code=~"5.."}[2m])) / clamp_min(sum(rate(microshop_order_http_requests_total[2m])), 0.001) > 0.05
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: Order Service HTTP 5xx rate is above 5 percent
+              description: More than 5 percent of observed Order Service HTTP responses have been 5xx for at least two minutes.

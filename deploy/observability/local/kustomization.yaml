@@ -6,4 +6,5 @@ namespace: observability
 resources:
   - namespace.yaml
   - prometheus.yaml
+  - prometheus-rules.yaml
   - grafana.yaml

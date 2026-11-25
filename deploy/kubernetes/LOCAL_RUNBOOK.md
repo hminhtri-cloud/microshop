@@ -84,8 +84,15 @@ kubectl --context minikube -n microshop port-forward service/frontend 18081:80
 ```
 
 `/api/products` qua Product, `/api/orders` qua Order, API còn lại qua Auth.
-`frontend/nginx.conf` trả `404` cho `/api/internal/*`, `/metrics` và
-`/api/metrics`, nên không public API nội bộ hay metrics.
+`frontend/nginx.conf` trong source trả `404` cho `/api/internal/*`, `/metrics`
+và `/api/metrics`. Overlay hiện vẫn dùng frontend image `2072f94`, được build
+trước khi thêm hai rule metrics; cần build/load image frontend mới và cập nhật
+tag qua GitOps trước khi xác nhận hai rule metrics có hiệu lực runtime.
+
+Prometheus có thể triển khai trước Grafana để giảm RAM đỉnh; xem
+`deploy/observability/local/README.md`. Sau khi áp dụng, kiểm tra target
+`order-service` là `up` và query counter trước/sau khi tạo traffic. Chỉ coi
+dashboard hoặc alert đã hoạt động sau khi kiểm tra kết quả runtime thực tế.
 
 ## Kiểm thử vận hành không xóa dữ liệu
 

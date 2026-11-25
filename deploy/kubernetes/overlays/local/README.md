@@ -21,18 +21,20 @@ Node phải là `Ready` và `/readyz` phải trả `ok` trước khi tiếp tụ
 
 ## Lần dựng mới
 
-Tag image phải trùng `images[].newTag` trong `kustomization.yaml`. Với commit
-hiện tại là `2072f94`:
+Tag image phải trùng `images[].newTag` trong `kustomization.yaml`. Với các tag
+hiện tại, Order dùng source có instrumentation ở `e655fb9`; ba image còn lại
+dùng source tương ứng `2072f94`. Build từng image từ đúng phiên bản source đó
+trong checkout phù hợp, không gắn tag cũ cho source đã thay đổi:
 
 ```powershell
 docker build -t microshop-auth-service:2072f94 services/auth-service
 docker build -t microshop-product-service:2072f94 services/product-service
-docker build -t microshop-order-service:2072f94 services/order-service
+docker build -t microshop-order-service:e655fb9 services/order-service
 docker build -t microshop-frontend:2072f94 frontend
 
 minikube image load microshop-auth-service:2072f94 -p minikube
 minikube image load microshop-product-service:2072f94 -p minikube
-minikube image load microshop-order-service:2072f94 -p minikube
+minikube image load microshop-order-service:e655fb9 -p minikube
 minikube image load microshop-frontend:2072f94 -p minikube
 ```
 

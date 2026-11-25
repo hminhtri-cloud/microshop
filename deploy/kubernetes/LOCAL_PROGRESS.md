@@ -118,3 +118,25 @@
   observability images, update only their local image tags through GitOps, then
   apply the observability overlay and perform the documented controlled alert
   and recovery checks.
+
+## 2026-11-25 — Runtime continuation: Order and Prometheus
+
+- Restarted the existing Minikube profile. Node became Ready, `/readyz` was
+  `ok`, and the existing `mysql-data` PVC stayed Bound. Initially frontend
+  Nginx could not resolve `product-service` while cluster DNS was starting;
+  it recovered automatically. All five Deployments became available.
+- Built and loaded `microshop-order-service:e655fb9`; commit `a5b43a9` changed
+  only the Order image tag. Argo synced that revision and the new Order Pod
+  rolled out. A request through `order-service:8000` returned HTTP 200 for
+  `/health` and `/metrics`; the metrics response contained Order counters.
+- Applied Prometheus and its rules separately in `observability`. The Pod was
+  Ready with zero restarts, its Order target was `up`, and the Prometheus API
+  showed the `/health` counter rising from 15 to 28 after ten explicit health
+  requests and normal probes. This is cluster runtime evidence, not SQLite.
+- Host RAM fell to about 1.05 GiB free, with `vmmemWSL` using roughly 6 GiB;
+  C: had 7.39 GiB free. Grafana, controlled alert firing/recovery, fault tests,
+  and checkout were deferred until the machine has enough headroom. No Grafana
+  Secret was created. No alert firing or dashboard result is claimed.
+- Next: verify capacity after restarting; load and roll out the frontend image
+  containing the gateway metrics blocks, then deploy Grafana if feasible. Test
+  both alert transitions and the remaining operational scenarios separately.
